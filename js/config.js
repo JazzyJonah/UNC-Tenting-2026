@@ -7,7 +7,7 @@ export const APP_TITLE = "UNC Tenting Schedules";
 
 // Supabase
 export const SUPABASE_URL = "https://hhdtvfihvpgebytwlvxt.supabase.co";
-export const SUPABASE_ANON_KEY = "sb_publishable_Td839mS_1fX5w--nHyXl_w_deRNa208";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoZHR2ZmlodnBnZWJ5dHdsdnh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MDI0MzEsImV4cCI6MjA4MjA3ODQzMX0.zJlDw4_rp2f4eiG0kkXVol11ACK6ODezMxPTa5z5_lc";
 export const SUPABASE_TABLE = "attendance";
 
 // Admin “login name”
