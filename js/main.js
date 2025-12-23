@@ -57,6 +57,10 @@ function buildAttendanceMap(records) {
  * Note: A purely static site can’t run in the background. This will be triggered
  * when the user (or admin) opens the site. (Optional GitHub Action below can
  * sweep automatically.)
+ * 
+ *  Missed shifts are handled by the GitHub Action sweep (server-side).
+ *  The frontend should NOT mark missed shifts, to avoid overwriting verified/overridden states.
+ *  As such, this function is currently not called.
  */
 async function recordMissedShiftsIfNeeded() {
   const now = new Date();
@@ -65,8 +69,14 @@ async function recordMissedShiftsIfNeeded() {
     const started = s.start <= now;
     const startISO = s.start.toISOString();
     const endISO = s.end.toISOString();
-    const exists = attendanceMap.has(keyFor(s.person, startISO, endISO));
-    return started && !exists;
+    const rec = attendanceMap.get(keyFor(s.person, startISO, endISO));
+    if (rec && (rec.status === "verified" || rec.overridden)) {
+        return false;
+    }
+    return (
+        started &&
+        !rec // no record at all
+    );
   });
 
   if (!toMarkMissed.length) return;
@@ -119,7 +129,7 @@ async function onVerifyClick(shift) {
     const endISO = shift.end.toISOString();
     const nowISO = new Date().toISOString();
 
-    const rec = await upsertAttendance({
+    await upsertAttendance({
       person: shift.person,
       shiftStartISO: startISO,
       shiftEndISO: endISO,
@@ -127,9 +137,10 @@ async function onVerifyClick(shift) {
       verifiedAtISO: nowISO,
     });
 
-    attendanceMap.set(keyFor(shift.person, startISO, endISO), rec);
     showToast("Verification successful. You're checked in ✅", "success");
 
+    // Always refresh from Supabase (source of truth)
+    await reloadAttendanceForCurrentUser();
     await renderCurrentWeek();
   } catch (e) {
     console.error(e);
@@ -137,13 +148,20 @@ async function onVerifyClick(shift) {
   }
 }
 
+async function reloadAttendanceForCurrentUser() {
+  const records = await fetchAttendanceForPerson(currentName);
+  attendanceMap = buildAttendanceMap(records);
+}
+
 async function renderCurrentWeek() {
   const { start, end } = getWeekBounds(anchorDate, weekIndex);
 
   setText("weekLabel", `${formatDate(start)} → ${formatDate(new Date(end.getTime() - 1))}`);
 
-  // Record missed shifts (best-effort) before rendering
-  await recordMissedShiftsIfNeeded();
+  // IMPORTANT:
+  // Missed shifts are handled by the GitHub Action sweep (server-side).
+  // The frontend should NOT mark missed shifts, to avoid overwriting verified/overridden states.
+  // await recordMissedShiftsIfNeeded();
 
   // Recompute verify options
   const verifiable = computeVerifiableShifts();
@@ -152,6 +170,7 @@ async function renderCurrentWeek() {
   const weekShifts = filterShiftsInRange(shiftsForUser, start, end);
   renderShiftList({ shifts: weekShifts, attendanceMap });
 }
+
 
 function wireWeekButtons() {
   document.getElementById("prevWeekBtn").addEventListener("click", async () => {

@@ -14,11 +14,14 @@ export const SUPABASE_TABLE = "attendance";
 export const ADMIN_NAME = "secret";
 
 // Location target: 35°59'49.7"N 78°56'29.5"W  -> decimal degrees
+// 12°06'50.1"N 68°17'39.0"W
 // 35 + 59/60 + 49.7/3600 = 35.9971389
 // -(78 + 56/60 + 29.5/3600) = -78.9415278
 export const TARGET_COORD = {
-  lat: 35.9971389,
-  lon: -78.9415278,
+//   lat: 35.9971389,
+//   lon: -78.9415278,
+    lat: 12.1139166667,
+    lon: -68.2941666667,
 };
 
 // How close is “close enough” (meters)?
