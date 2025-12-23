@@ -1,0 +1,30 @@
+/* Keep it simple + readable on mobile and laptop */
+
+:root {
+  --card-radius: 16px;
+}
+
+.card {
+  border-radius: var(--card-radius);
+}
+
+.list-group-item {
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+.badge {
+  font-weight: 600;
+}
+
+#toastArea .alert {
+  border-radius: 14px;
+}
+
+/* Make verify buttons comfortable on phones */
+@media (max-width: 576px) {
+  #verifyList button {
+    padding: 14px 12px;
+    font-size: 1rem;
+  }
+}
