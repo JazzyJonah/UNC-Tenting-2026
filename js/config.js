@@ -34,3 +34,7 @@ export const SCHEDULE_CSV_PATH = "data/schedule.csv";
 // We define “week 0” as starting at the first timestamp in the CSV,
 // and each week is 7 days long from that anchor.
 export const DAYS_PER_WEEK = 7;
+
+// Verification timing (minutes)
+export const VERIFY_BEFORE_MINUTES = 15;
+export const VERIFY_AFTER_MINUTES = 5;

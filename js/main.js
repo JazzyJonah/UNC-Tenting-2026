@@ -8,7 +8,7 @@
  * - Records missed shifts once they have started (best-effort; see note below)
  */
 
-import { ADMIN_NAME, APP_TITLE } from "./config.js";
+import { ADMIN_NAME, APP_TITLE, VERIFY_BEFORE_MINUTES, VERIFY_AFTER_MINUTES } from "./config.js";
 import { getSavedName, saveName, clearName } from "./auth.js";
 import {
   loadScheduleCSV,
@@ -110,9 +110,19 @@ function computeVerifiableShifts() {
     const rec = attendanceMap.get(keyFor(s.person, startISO, endISO));
     if (rec?.status === "verified") return false;
 
-    const msToStart = s.start.getTime() - now.getTime();
-    return msToStart <= fifteenMin && msToStart > 0;
-  });
+    const msBefore = VERIFY_BEFORE_MINUTES * 60 * 1000;
+    const msAfter = VERIFY_AFTER_MINUTES * 60 * 1000;
+
+    const delta = now.getTime() - s.start.getTime();
+    // delta < 0  → before start
+    // delta = 0  → exactly start
+    // delta > 0  → after start
+
+    return (
+        delta >= -msBefore &&
+        delta <= msAfter
+    );
+    });
 }
 
 async function onVerifyClick(shift) {

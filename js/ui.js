@@ -89,8 +89,16 @@ export function renderVerifyPanel({ upcomingVerifiableShifts, onVerifyClick }) {
 
   for (const s of upcomingVerifiableShifts.sort((a, b) => a.start - b.start)) {
     const btn = document.createElement("button");
-    btn.className = "btn btn-warning";
-    btn.innerHTML = `Verify: <b>${formatDateTime(s.start)}</b>`;
+    const now = new Date();
+    const isAfterStart = now >= s.start;
+
+    btn.className = isAfterStart
+        ? "btn btn-danger"
+        : "btn btn-warning";
+    
+    btn.innerHTML = isAfterStart
+        ? `VERIFY (GRACE PERIOD): <b>${formatDateTime(s.start)}</b>`
+        : `Verify: <b>${formatDateTime(s.start)}</b>`;
 
     btn.addEventListener("click", () => onVerifyClick(s));
     list.appendChild(btn);

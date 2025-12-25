@@ -17,12 +17,20 @@ import Papa from "papaparse";
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+const VERIFY_AFTER_MINUTES = 5;
+const GRACE_MS = VERIFY_AFTER_MINUTES * 60 * 1000;
+
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars.");
   process.exit(1);
 }
 
 const TABLE = "attendance";
+
+function shiftKey(person, startISO, endISO) {
+  return `${person}__${startISO}__${endISO}`;
+}
+
 
 function parseLocalTimeToDate(timeStr) {
   // For CI, this parses in UTC-ish depending on runtime.
@@ -111,24 +119,63 @@ async function main() {
   const now = new Date();
 
   // Mark any started shifts as missed if absent
-  const started = allShifts.filter((s) => s.start <= now);
+  const startedAndExpired = allShifts.filter(
+  (s) => now.getTime() > s.start.getTime() + GRACE_MS
+  );
+
+  // Fetch existing attendance records so we don't overwrite verified/overridden
+    const earliestStart = new Date(
+        Math.min(...startedAndExpired.map((s) => s.start.getTime()))
+    ).toISOString();
+
+    const latestEnd = new Date(
+        Math.max(...startedAndExpired.map((s) => s.end.getTime()))
+    ).toISOString();
+
+    const existing = await supaFetch(
+        `${TABLE}?shift_start=gte.${earliestStart}&shift_end=lte.${latestEnd}`
+    );
+
+    // Build lookup of existing records
+    const existingKeys = new Set(
+    existing.map((r) =>
+        shiftKey(r.person, r.shift_start, r.shift_end)
+    )
+    );
+
 
   // Upsert in chunks
-  const payload = started.map((s) => ({
-    person: s.person,
-    shift_start: s.start.toISOString(),
-    shift_end: s.end.toISOString(),
-    status: "missed",
-  }));
+  const payload = startedAndExpired
+  .map((s) => {
+    const startISO = s.start.toISOString();
+    const endISO = s.end.toISOString();
+    const key = shiftKey(s.person, startISO, endISO);
+
+    if (existingKeys.has(key)) {
+      return null; // already recorded (verified, overridden, or missed)
+    }
+
+    return {
+      person: s.person,
+      shift_start: startISO,
+      shift_end: endISO,
+      status: "missed",
+    };
+  })
+  .filter(Boolean);
+
 
   const chunkSize = 500;
   for (let i = 0; i < payload.length; i += chunkSize) {
     const chunk = payload.slice(i, i + chunkSize);
     // Upsert uses unique index on (person, shift_start, shift_end)
-    await supaFetch(`${TABLE}?on_conflict=person,shift_start,shift_end`, {
-      method: "POST",
-      body: JSON.stringify(chunk),
-    });
+    if (chunk.length > 0) {
+  await supaFetch(TABLE, {
+    method: "POST",
+    body: JSON.stringify(chunk),
+  });
+}
+
   }
 
   console.log(`Swept ${payload.length} started shifts.`);
