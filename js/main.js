@@ -254,14 +254,15 @@ async function loginAs(name) {
   wireWeekButtons();
   await renderCurrentWeek();
 
-  // Update verifiable buttons every 30 seconds
-  setInterval(async () => {
+  // Periodically refresh attendance from Supabase so missed shifts appear
+    setInterval(async () => {
     try {
-      await renderCurrentWeek();
-    } catch {
-      // quiet
+        await reloadAttendanceForCurrentUser();
+        await renderCurrentWeek();
+    } catch (e) {
+        console.warn("Periodic refresh failed:", e);
     }
-  }, 30000);
+    }, 30000);
 }
 
 async function init() {
