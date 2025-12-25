@@ -150,7 +150,7 @@ async function onVerifyClick(shift) {
     showToast("Verification successful. You're checked in ✅", "success");
 
     // Always refresh from Supabase (source of truth)
-    await reloadAttendanceForCurrentUser();
+    // await reloadAttendanceForCurrentUser();
     await renderCurrentWeek();
   } catch (e) {
     console.error(e);
@@ -164,7 +164,36 @@ async function reloadAttendanceForCurrentUser() {
 }
 
 async function renderCurrentWeek() {
+
+  // Always refresh attendance before rendering
+  await reloadAttendanceForCurrentUser();
+  
+  //Temporary logging
+  console.log("Attendance records from Supabase:");
+for (const [k, v] of attendanceMap.entries()) {
+  console.log(k, v.status);
+}
+
+
+  const lastSweep = await fetchLastSweepTime();
+    setText(
+    "sweepIndicator",
+    `Last attendance sweep: ${formatDateTime(lastSweep)}`
+    );
+
   const { start, end } = getWeekBounds(anchorDate, weekIndex);
+
+  console.log("Computed shifts:");
+for (const s of shiftsForUser) {
+  console.log(
+    keyFor(
+      s.person,
+      s.start.toISOString(),
+      s.end.toISOString()
+    )
+  );
+}
+
 
   setText("weekLabel", `${formatDate(start)} → ${formatDate(new Date(end.getTime() - 1))}`);
 
@@ -255,14 +284,14 @@ async function loginAs(name) {
   await renderCurrentWeek();
 
   // Periodically refresh attendance from Supabase so missed shifts appear
-    setInterval(async () => {
-    try {
-        await reloadAttendanceForCurrentUser();
-        await renderCurrentWeek();
-    } catch (e) {
-        console.warn("Periodic refresh failed:", e);
-    }
-    }, 30000);
+    // setInterval(async () => {
+    // try {
+    //     // await reloadAttendanceForCurrentUser();
+    //     await renderCurrentWeek();
+    // } catch (e) {
+    //     console.warn("Periodic refresh failed:", e);
+    // }
+    // }, 30000);
 }
 
 async function init() {
