@@ -87,3 +87,14 @@ export async function overrideMissedToVerified({ person, shiftStartISO, shiftEnd
     overrideAtISO: now,
   });
 }
+
+export async function fetchLastSweepTime() {
+  const { data, error } = await supabase
+    .from("sweep_metadata")
+    .select("last_run")
+    .eq("id", 1)
+    .single();
+
+  if (error) throw error;
+  return new Date(data.last_run);
+}
