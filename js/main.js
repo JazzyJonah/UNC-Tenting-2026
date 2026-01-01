@@ -17,7 +17,7 @@ import {
   filterShiftsInRange,
   formatDate,
 } from "./schedule.js";
-import { fetchAttendanceForPerson, upsertAttendance } from "./db.js";
+import { fetchAttendanceForPerson, upsertAttendance, fetchLastSweepTime } from "./db.js";
 import { isCloseEnoughToTarget } from "./geo.js";
 import {
   setVisible,
