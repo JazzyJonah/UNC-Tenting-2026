@@ -180,11 +180,11 @@ for (const [k, v] of attendanceMap.entries()) {
 }
 
 
-  const lastSweep = await fetchLastSweepTime();
-    setText(
-    "sweepIndicator",
-    `Last attendance sweep: ${formatDateTime(lastSweep)}`
-    );
+  // const lastSweep = await fetchLastSweepTime();
+  //   setText(
+  //   "sweepIndicator",
+  //   `Last attendance sweep: ${formatDateTime(lastSweep)}`
+  //   );
 
   const { start, end } = getWeekBounds(anchorDate, weekIndex);
 
