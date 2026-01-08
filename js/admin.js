@@ -50,6 +50,7 @@ export async function renderAdminList(adminName) {
       try {
         btn.disabled = true;
         await overrideMissedToVerified({
+          shiftId: rec.shift_id,
           person: rec.person,
           shiftStartISO: rec.shift_start,
           shiftEndISO: rec.shift_end,

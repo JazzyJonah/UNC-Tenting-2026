@@ -16,6 +16,8 @@ import {
   getWeekBounds,
   filterShiftsInRange,
   formatDate,
+  formatDateTime,
+  shiftId,
 } from "./schedule.js";
 import { fetchAttendanceForPerson, upsertAttendance, fetchLastSweepTime } from "./db.js";
 import { isCloseEnoughToTarget } from "./geo.js";
@@ -45,7 +47,7 @@ function keyFor(person, startISO, endISO) {
 function buildAttendanceMap(records) {
   const map = new Map();
   for (const r of records) {
-    map.set(keyFor(r.person, r.shift_start, r.shift_end), r);
+    map.set(r.shift_id, r);
   }
   return map;
 }
@@ -69,7 +71,9 @@ async function recordMissedShiftsIfNeeded() {
     const started = s.start <= now;
     const startISO = s.start.toISOString();
     const endISO = s.end.toISOString();
-    const rec = attendanceMap.get(keyFor(s.person, startISO, endISO));
+    const rec = attendanceMap.get(shiftId(s.person, s.start.toISOString()
+)
+);
     if (rec && (rec.status === "verified" || rec.overridden)) {
         return false;
     }
@@ -107,7 +111,8 @@ function computeVerifiableShifts() {
   return shiftsForUser.filter((s) => {
     const startISO = s.start.toISOString();
     const endISO = s.end.toISOString();
-    const rec = attendanceMap.get(keyFor(s.person, startISO, endISO));
+    const rec = attendanceMap.get(shiftId(s.person, s.start.toISOString())
+);
     if (rec?.status === "verified") return false;
 
     const msBefore = VERIFY_BEFORE_MINUTES * 60 * 1000;
@@ -183,16 +188,15 @@ for (const [k, v] of attendanceMap.entries()) {
 
   const { start, end } = getWeekBounds(anchorDate, weekIndex);
 
-  console.log("Computed shifts:");
-for (const s of shiftsForUser) {
-  console.log(
-    keyFor(
-      s.person,
-      s.start.toISOString(),
-      s.end.toISOString()
-    )
-  );
-}
+  console.log("Computed shifts (browser):");
+  for (const s of shiftsForUser) {
+    console.log({
+      person: s.person,
+      startISO: s.start.toISOString(),
+      shiftId: shiftId(s.person, s.start.toISOString())
+    });
+  }
+
 
 
   setText("weekLabel", `${formatDate(start)} → ${formatDate(new Date(end.getTime() - 1))}`);
@@ -271,6 +275,11 @@ async function loginAs(name) {
   // Load attendance
   const records = await fetchAttendanceForPerson(currentName);
   attendanceMap = buildAttendanceMap(records);
+  console.log("AttendanceMap keys:");
+  for (const [k, v] of attendanceMap.entries()) {
+    console.log(k, v.status);
+  }
+
 
   // Determine anchor date (first timestamp in CSV)
   anchorDate = new Date(schedule.timeline[0].time);

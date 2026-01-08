@@ -5,6 +5,7 @@
 
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_TABLE } from "./config.js";
+import { shiftId } from "./schedule.js";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -22,6 +23,7 @@ export async function upsertAttendance({
   overrideAtISO = null,
 }) {
   const payload = {
+    shift_id: shiftId(person, shiftStartISO),
     person,
     shift_start: shiftStartISO,
     shift_end: shiftEndISO,
@@ -72,11 +74,12 @@ export async function fetchMissedShiftsNewestFirst(limit = 200) {
 /**
  * Override a missed shift to verified.
  */
-export async function overrideMissedToVerified({ person, shiftStartISO, shiftEndISO, adminName }) {
+export async function overrideMissedToVerified({ shiftId, person, shiftStartISO, shiftEndISO, adminName }) {
   const now = new Date().toISOString();
 
   // Update existing record (should exist as missed), but upsert for safety.
   return upsertAttendance({
+    shift_id: shiftId,
     person,
     shiftStartISO,
     shiftEndISO,
@@ -93,8 +96,12 @@ export async function fetchLastSweepTime() {
     .from("sweep_metadata")
     .select("last_run")
     .eq("id", 1)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
+
+  if (!data) return null;
+
   return new Date(data.last_run);
 }
+

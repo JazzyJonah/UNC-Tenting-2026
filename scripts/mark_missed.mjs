@@ -27,16 +27,24 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 
 const TABLE = "attendance";
 
-function shiftKey(person, startISO, endISO) {
-  return `${person}__${startISO}__${endISO}`;
+// function shiftKey(person, startISO, endISO) {
+//   return `${person}__${startISO}__${endISO}`;
+// }
+
+function shiftId(person, startISO) {
+  return `${person}__${startISO}`;
 }
 
 
 function parseLocalTimeToDate(timeStr) {
-  // For CI, this parses in UTC-ish depending on runtime.
-  // Using Date(timeStr) is “best effort”. If you want strict timezone, we can adjust later.
-  return new Date(timeStr);
+  // Force LOCAL time parsing (browser-compatible)
+  const [datePart, timePart] = timeStr.trim().split(" ");
+  const [month, day, year] = datePart.split("/").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+
+  return new Date(year, month - 1, day, hour, minute);
 }
+
 
 function buildShiftsForPerson(timeline, person) {
   const shifts = [];
@@ -123,46 +131,59 @@ async function main() {
   (s) => now.getTime() > s.start.getTime() + GRACE_MS
   );
 
-  // Fetch existing attendance records so we don't overwrite verified/overridden
-    const earliestStart = new Date(
-        Math.min(...startedAndExpired.map((s) => s.start.getTime()))
-    ).toISOString();
+  // Fetch existing attendance rows so we don't insert duplicates
+  const existingAttendance = await supaFetch("attendance?select=shift_id");
 
-    const latestEnd = new Date(
-        Math.max(...startedAndExpired.map((s) => s.end.getTime()))
-    ).toISOString();
+  // Build a Set of existing shift_ids
+  const existingShiftIds = new Set(
+    existingAttendance
+      .map((r) => r.shift_id)
+      .filter(Boolean)
+  );
 
-    const existing = await supaFetch(
-        `${TABLE}?shift_start=gte.${earliestStart}&shift_end=lte.${latestEnd}`
-    );
 
-    // Build lookup of existing records
-    const existingKeys = new Set(
-    existing.map((r) =>
-        shiftKey(r.person, r.shift_start, r.shift_end)
-    )
-    );
+  // // Fetch existing attendance records so we don't overwrite verified/overridden
+  //   const earliestStart = new Date(
+  //       Math.min(...startedAndExpired.map((s) => s.start.getTime()))
+  //   ).toISOString();
+
+  //   const latestEnd = new Date(
+  //       Math.max(...startedAndExpired.map((s) => s.end.getTime()))
+  //   ).toISOString();
+
+  //   const existing = await supaFetch(
+  //       `${TABLE}?shift_start=gte.${earliestStart}&shift_end=lte.${latestEnd}`
+  //   );
+
+  //   // Build lookup of existing records
+  //   const existingKeys = new Set(
+  //   existing.map((r) =>
+  //       shiftKey(r.person, r.shift_start, r.shift_end)
+  //   )
+  //   );
 
 
   // Upsert in chunks
   const payload = startedAndExpired
-  .map((s) => {
-    const startISO = s.start.toISOString();
-    const endISO = s.end.toISOString();
-    const key = shiftKey(s.person, startISO, endISO);
+    .map((s) => {
+      const startISO = s.start.toISOString();
+      const id = shiftId(s.person, startISO);
 
-    if (existingKeys.has(key)) {
-      return null; // already recorded (verified, overridden, or missed)
-    }
+      // Skip if already recorded (verified, overridden, or missed)
+      if (existingShiftIds.has(id)) {
+        return null;
+      }
 
-    return {
-      person: s.person,
-      shift_start: startISO,
-      shift_end: endISO,
-      status: "missed",
-    };
-  })
-  .filter(Boolean);
+      return {
+        shift_id: id,
+        person: s.person,
+        shift_start: startISO,
+        shift_end: s.end.toISOString(),
+        status: "missed",
+      };
+    })
+    .filter(Boolean);
+
 
 
   const chunkSize = 500;
@@ -170,16 +191,28 @@ async function main() {
     const chunk = payload.slice(i, i + chunkSize);
     // Upsert uses unique index on (person, shift_start, shift_end)
     if (chunk.length > 0) {
-  await supaFetch(TABLE, {
-    method: "POST",
-    body: JSON.stringify(chunk),
-  });
-}
+        await supaFetch(TABLE, {
+            method: "POST",
+            body: JSON.stringify(chunk),
+        });
+    }
 
   }
 
-  console.log(`Swept ${payload.length} started shifts.`);
+    console.log(
+    `Sweep complete: ${payload.length} newly missed shifts inserted (${existingKeys.size} existing skipped)`
+    );
+
+    await supaFetch("sweep_metadata", {
+        method: "PATCH",
+        body: JSON.stringify({ last_run: new Date().toISOString() }),
+        headers: {
+            Prefer: "resolution=merge-duplicates"
+        }
+    });
 }
+
+
 
 main().catch((e) => {
   console.error(e);

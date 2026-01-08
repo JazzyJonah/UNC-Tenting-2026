@@ -15,11 +15,33 @@
 import { SCHEDULE_CSV_PATH, DAYS_PER_WEEK } from "./config.js";
 
 function parseLocalTimeToDate(timeStr) {
-  // Your CSV timestamps look like "1/18/2026 12:00:00"
-  // This creates a Date in the user's local timezone (browser).
-  // If you need strict timezone behavior, we can change this later.
-  return new Date(timeStr);
+  if (!timeStr || typeof timeStr !== "string") {
+    return null;
+  }
+
+  const trimmed = timeStr.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const [datePart, timePart] = trimmed.split(" ");
+  if (!datePart || !timePart) {
+    return null;
+  }
+
+  const [month, day, year] = datePart.split("/").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+
+  if (
+    [month, day, year, hour, minute].some((n) => Number.isNaN(n))
+  ) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day, hour, minute);
 }
+
+
 
 export async function loadScheduleCSV() {
   const res = await fetch(SCHEDULE_CSV_PATH, { cache: "no-store" });
@@ -46,6 +68,15 @@ export async function loadScheduleCSV() {
   const timeline = rows
     .map((r) => {
       const t = parseLocalTimeToDate(r.Time);
+
+      if (!t) {
+        console.warn("Skipping row with invalid Time:", r);
+        return null;
+      }
+      if (isNaN(t.getTime())) {
+        console.error("Invalid date parsed from CSV:", r.Time);
+      }
+
       const flags = {};
       for (const p of people) {
         const v = String(r[p] ?? "").trim().toUpperCase();
@@ -132,4 +163,8 @@ export function formatDate(dt) {
     day: "numeric",
     year: "numeric",
   }).format(dt);
+}
+
+export function shiftId(person, startISO) {
+  return `${person}__${startISO}`;
 }
