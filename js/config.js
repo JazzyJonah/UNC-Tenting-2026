@@ -23,7 +23,7 @@ export const TARGET_COORD = {
 };
 
 // How close is “close enough” (meters)?
-export const MAX_DISTANCE_METERS = 200;
+export const MAX_DISTANCE_METERS = 2000;
 
 // CSV path (relative to site root)
 export const SCHEDULE_CSV_PATH = "data/schedule.csv";

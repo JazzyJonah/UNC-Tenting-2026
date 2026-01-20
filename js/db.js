@@ -74,15 +74,16 @@ export async function fetchMissedShiftsNewestFirst(limit = 200) {
 /**
  * Override a missed shift to verified.
  */
-export async function overrideMissedToVerified({ shiftId, person, shiftStartISO, shiftEndISO, adminName }) {
+export async function overrideMissedToVerified({ person, shiftStartISO, shiftEndISO, adminName }) {
   const now = new Date().toISOString();
+  const canonicalStartISO = new Date(shiftStartISO).toISOString();
 
   // Update existing record (should exist as missed), but upsert for safety.
   return upsertAttendance({
-    shift_id: shiftId,
+    shift_id: shiftId(person, canonicalStartISO),
     person,
-    shiftStartISO,
-    shiftEndISO,
+    shift_start: shiftStartISO,
+    shift_end: shiftEndISO,
     status: "verified",
     verifiedAtISO: now,
     overridden: true,

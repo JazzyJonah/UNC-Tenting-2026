@@ -2,7 +2,7 @@
  * UI helpers: toasts, DOM utilities, rendering shift lists.
  */
 
-import { formatDateTime, formatDate } from "./schedule.js";
+import { formatDateTime, formatDate, shiftId } from "./schedule.js";
 
 export function showToast(message, type = "info") {
   const area = document.getElementById("toastArea");
@@ -52,8 +52,15 @@ export function renderShiftList({ shifts, attendanceMap }) {
 
   for (const s of shifts.sort((a, b) => a.start - b.start)) {
     const key = `${s.person}__${s.start.toISOString()}__${s.end.toISOString()}`;
-    const rec = attendanceMap.get(key);
+    const rec = attendanceMap.get(shiftId(s.person, s.start.toISOString()));
     const status = rec?.status ?? "unrecorded";
+
+    console.log("Rendering shift", {
+      shiftIdComputed: shiftId(s.person, s.start.toISOString()),
+      mapHas: attendanceMap.has(shiftId(s.person, s.start.toISOString())),
+      rec: attendanceMap.get(shiftId(s.person, s.start.toISOString())),
+    });
+
 
     const item = document.createElement("div");
     item.className = "list-group-item shadow-sm";
