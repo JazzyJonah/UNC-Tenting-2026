@@ -71,9 +71,8 @@ async function recordMissedShiftsIfNeeded() {
     const started = s.start <= now;
     const startISO = s.start.toISOString();
     const endISO = s.end.toISOString();
-    const rec = attendanceMap.get(shiftId(s.person, s.start.toISOString()
-)
-);
+    const rec = attendanceMap.get(s.shift_id);
+    
     if (rec && (rec.status === "verified" || rec.overridden)) {
         return false;
     }
@@ -165,8 +164,12 @@ async function onVerifyClick(shift) {
 
 async function reloadAttendanceForCurrentUser() {
   const records = await fetchAttendanceForPerson(currentName);
+  console.log("Fetched attendance for", currentName, "count =", records.length);
+  console.log("First few:", records.slice(0, 5));
   attendanceMap = buildAttendanceMap(records);
+  console.log("attendanceMap size =", attendanceMap.size);
 }
+
 
 async function renderCurrentWeek() {
 
@@ -211,6 +214,15 @@ for (const [k, v] of attendanceMap.entries()) {
   renderVerifyPanel({ upcomingVerifiableShifts: verifiable, onVerifyClick });
 
   const weekShifts = filterShiftsInRange(shiftsForUser, start, end);
+  const s = weekShifts[0]; // or pick the one you care about
+  console.log("Shift from schedule:", {
+    startLocal: s.start.toString(),
+    startISO: s.start.toISOString(),
+    computedShiftId: shiftId(s.person, s.start.toISOString()),
+    fromShiftObj: s.shift_id, // if present
+  });
+  console.log("Matching DB record:", attendanceMap.get(shiftId(s.person, s.start.toISOString())));
+
   renderShiftList({ shifts: weekShifts, attendanceMap });
 }
 

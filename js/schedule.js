@@ -110,10 +110,12 @@ export function buildShiftsForPerson(timeline, person) {
     // Shift ends when it becomes FALSE at the next row OR we reach last segment
     const nextIsOn = !!next.flags[person];
     if (inShift && !nextIsOn) {
+      const startISO = start.toISOString();
       shifts.push({
         person,
         start: start,
         end: next.time,
+        shiftId: shiftId(person, startISO),
       });
       inShift = false;
       start = null;
@@ -122,10 +124,12 @@ export function buildShiftsForPerson(timeline, person) {
 
   // If it ends still "on", close at last known time (best-effort)
   if (inShift) {
+    const startISO = start.toISOString();
     shifts.push({
       person,
       start,
       end: timeline[timeline.length - 1].time,
+      shiftId: shiftId(person, startISO),
     });
   }
 
