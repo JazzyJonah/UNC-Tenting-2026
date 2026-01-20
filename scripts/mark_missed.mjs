@@ -200,8 +200,9 @@ async function main() {
   }
 
     console.log(
-    `Sweep complete: ${payload.length} newly missed shifts inserted (${existingKeys.size} existing skipped)`
-    );
+  `Sweep complete: ${payload.length} newly missed shifts inserted (${existingShiftIds.size} existing known)`
+);
+
 
     await supaFetch("sweep_metadata", {
         method: "PATCH",
