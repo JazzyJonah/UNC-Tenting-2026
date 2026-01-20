@@ -204,12 +204,9 @@ async function main() {
 );
 
 
-    await supaFetch("sweep_metadata", {
-        method: "PATCH",
-        body: JSON.stringify({ last_run: new Date().toISOString() }),
-        headers: {
-            Prefer: "resolution=merge-duplicates"
-        }
+    await supaFetch("sweep_metadata?id=eq.1", {
+      method: "PATCH",
+      body: JSON.stringify({ last_run: new Date().toISOString() }),
     });
 }
 
