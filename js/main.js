@@ -64,42 +64,42 @@ function buildAttendanceMap(records) {
  *  The frontend should NOT mark missed shifts, to avoid overwriting verified/overridden states.
  *  As such, this function is currently not called.
  */
-async function recordMissedShiftsIfNeeded() {
-  const now = new Date();
+// async function recordMissedShiftsIfNeeded() {
+//   const now = new Date();
 
-  const toMarkMissed = shiftsForUser.filter((s) => {
-    const started = s.start <= now;
-    const startISO = s.start.toISOString();
-    const endISO = s.end.toISOString();
-    const rec = attendanceMap.get(s.shift_id);
-    
-    if (rec && (rec.status === "verified" || rec.overridden)) {
-        return false;
-    }
-    return (
-        started &&
-        !rec // no record at all
-    );
-  });
+//   const toMarkMissed = shiftsForUser.filter((s) => {
+//     const started = s.start <= now;
+//     const startISO = s.start.toISOString();
+//     const endISO = s.end.toISOString();
+//     const rec = attendanceMap.get(s.shift_id);
 
-  if (!toMarkMissed.length) return;
+//     if (rec && (rec.status === "verified" || rec.overridden)) {
+//         return false;
+//     }
+//     return (
+//         started &&
+//         !rec // no record at all
+//     );
+//   });
 
-  for (const s of toMarkMissed) {
-    try {
-      const startISO = s.start.toISOString();
-      const endISO = s.end.toISOString();
-      const rec = await upsertAttendance({
-        person: s.person,
-        shiftStartISO: startISO,
-        shiftEndISO: endISO,
-        status: "missed",
-      });
-      attendanceMap.set(keyFor(s.person, startISO, endISO), rec);
-    } catch (e) {
-      console.warn("Failed to mark missed:", e);
-    }
-  }
-}
+//   if (!toMarkMissed.length) return;
+
+//   for (const s of toMarkMissed) {
+//     try {
+//       const startISO = s.start.toISOString();
+//       const endISO = s.end.toISOString();
+//       const rec = await upsertAttendance({
+//         person: s.person,
+//         shiftStartISO: startISO,
+//         shiftEndISO: endISO,
+//         status: "missed",
+//       });
+//       attendanceMap.set(keyFor(s.person, startISO, endISO), rec);
+//     } catch (e) {
+//       console.warn("Failed to mark missed:", e);
+//     }
+//   }
+// }
 
 function computeVerifiableShifts() {
   const now = new Date();
@@ -177,9 +177,9 @@ async function renderCurrentWeek() {
   await reloadAttendanceForCurrentUser();
   
   //Temporary logging
-  console.log("Attendance records from Supabase:");
+  // console.log("Attendance records from Supabase:");
 for (const [k, v] of attendanceMap.entries()) {
-  console.log(k, v.status);
+  // console.log(k, v.status);
 }
 
 
@@ -191,14 +191,14 @@ for (const [k, v] of attendanceMap.entries()) {
 
   const { start, end } = getWeekBounds(anchorDate, weekIndex);
 
-  console.log("Computed shifts (browser):");
-  for (const s of shiftsForUser) {
-    console.log({
-      person: s.person,
-      startISO: s.start.toISOString(),
-      shiftId: shiftId(s.person, s.start.toISOString())
-    });
-  }
+  // console.log("Computed shifts (browser):");
+  // for (const s of shiftsForUser) {
+  //   console.log({
+  //     person: s.person,
+  //     startISO: s.start.toISOString(),
+  //     shiftId: shiftId(s.person, s.start.toISOString())
+  //   });
+  // }
 
 
 
@@ -247,7 +247,7 @@ function wireLogout() {
 }
 
 async function loginAs(name) {
-  currentName = name.trim();
+  currentName = name.trim().charAt(0).toUpperCase() + name.trim().slice(1).toLowerCase();
   saveName(currentName);
 
   document.getElementById("logoutBtn").classList.remove("d-none");
@@ -287,9 +287,9 @@ async function loginAs(name) {
   // Load attendance
   const records = await fetchAttendanceForPerson(currentName);
   attendanceMap = buildAttendanceMap(records);
-  console.log("AttendanceMap keys:");
+  // console.log("AttendanceMap keys:");
   for (const [k, v] of attendanceMap.entries()) {
-    console.log(k, v.status);
+    // console.log(k, v.status);
   }
 
 
