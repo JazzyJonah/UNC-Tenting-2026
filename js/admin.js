@@ -21,6 +21,7 @@ export async function renderAdminList(adminName) {
   }
 
   for (const rec of missed) {
+    console.log("Override target:", rec);
     const item = document.createElement("div");
     item.className = "list-group-item shadow-sm";
 

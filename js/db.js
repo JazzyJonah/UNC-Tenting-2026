@@ -22,8 +22,9 @@ export async function upsertAttendance({
   overrideBy = null,
   overrideAtISO = null,
 }) {
+  const canonicalStartISO = new Date(shiftStartISO).toISOString();
   const payload = {
-    shift_id: shiftId(person, shiftStartISO),
+    shift_id: shiftId(person, canonicalStartISO),
     person,
     shift_start: shiftStartISO,
     shift_end: shiftEndISO,
@@ -82,8 +83,8 @@ export async function overrideMissedToVerified({ person, shiftStartISO, shiftEnd
   return upsertAttendance({
     shift_id: shiftId(person, canonicalStartISO),
     person,
-    shift_start: shiftStartISO,
-    shift_end: shiftEndISO,
+    shiftStartISO: shiftStartISO,
+    shiftEndISO: shiftEndISO,
     status: "verified",
     verifiedAtISO: now,
     overridden: true,

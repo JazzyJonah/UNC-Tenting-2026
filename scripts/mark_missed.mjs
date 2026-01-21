@@ -86,7 +86,7 @@ async function supaFetch(path, options = {}) {
       apikey: SUPABASE_SERVICE_ROLE_KEY,
       Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
       "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates,return=representation",
+      // Prefer: "resolution=merge-duplicates,return=representation",
       ...(options.headers || {}),
     },
   });
@@ -194,6 +194,9 @@ async function main() {
         await supaFetch(TABLE, {
             method: "POST",
             body: JSON.stringify(chunk),
+            headers: {
+              Prefer: "resolution=ignore-duplicates",
+            },
         });
     }
 
