@@ -96,7 +96,9 @@ async function supaFetch(path, options = {}) {
     throw new Error(`${res.status} ${res.statusText}: ${text}`);
   }
 
-  return res.json();
+  const text = await res.text();
+  if (!text) return null;
+  return JSON.parse(text);
 }
 
 async function main() {
