@@ -11,7 +11,7 @@ export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 export const SUPABASE_TABLE = "attendance";
 
 // Admin “login name”
-export const ADMIN_NAME = "secret";
+export const ADMIN_NAME = "Secret";
 
 // Location target: 35°59'49.7"N 78°56'29.5"W  -> decimal degrees
 // 12°06'50.1"N 68°17'39.0"W
